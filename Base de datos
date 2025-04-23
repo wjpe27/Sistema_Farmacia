@@ -1,0 +1,432 @@
+CREATE DATABASE SistemaFarmacias;
+GO
+
+USE SistemaFarmacias;
+GO
+
+-- Tabla para almacenar tipos de documentos
+CREATE TABLE Documento (
+  ID_Documento INT PRIMARY KEY IDENTITY(1,1),
+  Tipo_Documento NVARCHAR(50) NOT NULL,
+  Detalle NVARCHAR(255)
+);
+GO
+
+-- Tabla para almacenar estados (activo, inactivo, pendiente, aprobado, etc.)
+CREATE TABLE Estado (
+  ID_Estado INT PRIMARY KEY IDENTITY(1,1),
+  Nombre NVARCHAR(50) NOT NULL
+);
+GO
+
+-- Tabla para almacenar información de los propietarios
+CREATE TABLE Propietario (
+  ID_Propietario INT PRIMARY KEY IDENTITY(1,1),
+  Nombre NVARCHAR(100) NOT NULL,
+  Cedula NVARCHAR(20) NOT NULL,
+  Telefono NVARCHAR(15),
+  CorreoElectronico NVARCHAR(100),
+  Direccion NVARCHAR(255)
+);
+GO
+
+-- Tabla para almacenar información de las farmacias
+CREATE TABLE Farmacia (
+  ID_Farmacia INT PRIMARY KEY IDENTITY(1,1),
+  Nombre NVARCHAR(100) NOT NULL,
+  Direccion NVARCHAR(255) NOT NULL,
+  Telefono NVARCHAR(15),
+  Tipo NVARCHAR(50),
+  ID_DirectorMedico INT, -- FK hacia DirectorMedico
+  FOREIGN KEY (ID_DirectorMedico) REFERENCES DirectorMedico(ID_DirectorMedico)
+);
+GO
+
+-- Tabla de relación entre Propietario y Farmacia
+CREATE TABLE Propietario_Farmacia (
+  ID_Propietario INT,
+  ID_Farmacia INT,
+  ID_Estado INT NOT NULL, -- FK hacia Estado
+  PRIMARY KEY (ID_Propietario, ID_Farmacia),
+  FOREIGN KEY (ID_Propietario) REFERENCES Propietario(ID_Propietario),
+  FOREIGN KEY (ID_Farmacia) REFERENCES Farmacia(ID_Farmacia),
+  FOREIGN KEY (ID_Estado) REFERENCES Estado(ID_Estado)
+);
+GO
+
+-- Tabla para almacenar especialidades médicas
+CREATE TABLE Especialidades (
+  ID_Especialidad INT PRIMARY KEY IDENTITY(1,1),
+  Nombre NVARCHAR(100) NOT NULL
+);
+GO
+
+-- Tabla para almacenar información del Director Médico
+CREATE TABLE DirectorMedico (
+  ID_DirectorMedico INT PRIMARY KEY IDENTITY(1,1),
+  Nombre NVARCHAR(100) NOT NULL,
+  Cedula NVARCHAR(20) NOT NULL,
+  Execuatur NVARCHAR(50),
+  Telefono NVARCHAR(15),
+  CorreoElectronico NVARCHAR(100),
+  Direccion NVARCHAR(255),
+  ID_Estado INT NOT NULL, -- FK hacia Estado
+  FOREIGN KEY (ID_Estado) REFERENCES Estado(ID_Estado)
+);
+GO
+GO
+
+-- Tabla de relación entre Director Médico y Especialidades
+CREATE TABLE Especialidad_Medico (
+  ID_DirectorMedico INT,
+  ID_Especialidad INT,
+  PRIMARY KEY (ID_DirectorMedico, ID_Especialidad),
+  FOREIGN KEY (ID_DirectorMedico) REFERENCES DirectorMedico(ID_DirectorMedico),
+  FOREIGN KEY (ID_Especialidad) REFERENCES Especialidades(ID_Especialidad)
+);
+GO
+
+-- Tabla para almacenar información de los reguladores
+CREATE TABLE Regulador (
+  ID_Regulador INT PRIMARY KEY IDENTITY(1,1),
+  Nombre NVARCHAR(100) NOT NULL,
+  Cedula NVARCHAR(20) NOT NULL,
+  Cargo NVARCHAR(50),
+  Institucion NVARCHAR(100),
+  ID_Estado INT NOT NULL, -- FK hacia Estado
+  FOREIGN KEY (ID_Estado) REFERENCES Estado(ID_Estado)
+);
+GO
+
+
+
+-- Tabla para almacenar tipos de solicitudes
+CREATE TABLE TipoSolicitud (
+  ID_Tipo_Solicitud INT PRIMARY KEY IDENTITY(1,1),
+  Tipo NVARCHAR(50) NOT NULL
+);
+GO
+
+-- Tabla para almacenar certificaciones
+CREATE TABLE Certificaciones (
+  ID_Cer INT PRIMARY KEY IDENTITY(1,1),
+  Tipo NVARCHAR(50) NOT NULL
+);
+GO
+
+-- Tabla para almacenar solicitudes
+CREATE TABLE Solicitud (
+  ID_Solicitud INT PRIMARY KEY IDENTITY(1,1),
+  ID_Farmacia INT,
+  ID_Cer INT,
+  Documentos NVARCHAR(255),
+  Estado INT NOT NULL DEFAULT 0, -- 0: Pendiente, 1: Aprobada
+  ID_Tipo_Solicitud INT,
+  FOREIGN KEY (ID_Farmacia) REFERENCES Farmacia(ID_Farmacia),
+  FOREIGN KEY (ID_Cer) REFERENCES Certificaciones(ID_Cer),
+  FOREIGN KEY (ID_Tipo_Solicitud) REFERENCES TipoSolicitud(ID_Tipo_Solicitud)
+);
+GO
+
+-- Tabla de relación entre Solicitud y Documento
+CREATE TABLE Solicitud_Documento (
+  ID_Solicitud INT,
+  ID_Documento INT,
+  PRIMARY KEY (ID_Solicitud, ID_Documento),
+  FOREIGN KEY (ID_Solicitud) REFERENCES Solicitud(ID_Solicitud),
+  FOREIGN KEY (ID_Documento) REFERENCES Documento(ID_Documento)
+);
+GO
+
+-- Tabla para almacenar inspecciones
+CREATE TABLE Inspeccion (
+  ID_Regulador INT,
+  ID_Farmacia INT,
+  Fecha DATE NOT NULL,
+  Resultado NVARCHAR(50),
+  Observaciones NVARCHAR(255),
+  Informe NVARCHAR(255),
+  PRIMARY KEY (ID_Regulador, ID_Farmacia),
+  FOREIGN KEY (ID_Regulador) REFERENCES Regulador(ID_Regulador),
+  FOREIGN KEY (ID_Farmacia) REFERENCES Farmacia(ID_Farmacia)
+);
+GO
+
+-- Tabla para almacenar licencias
+CREATE TABLE Licencia (
+  ID_Cer INT,
+  ID_Farmacia INT,
+  Fecha_Atribucion DATE NOT NULL,
+  Fecha_Vencimiento DATE NOT NULL,
+  Estado BIT NOT NULL DEFAULT 1, -- 1: Vigente, 0: Vencida
+  PRIMARY KEY (ID_Cer, ID_Farmacia),
+  FOREIGN KEY (ID_Cer) REFERENCES Certificaciones(ID_Cer),
+  FOREIGN KEY (ID_Farmacia) REFERENCES Farmacia(ID_Farmacia)
+);
+GO
+
+INSERT INTO Estado (Nombre) VALUES ('Activo');
+INSERT INTO Estado (Nombre) VALUES ('Inactivo');
+INSERT INTO Estado (Nombre) VALUES ('Pendiente');
+INSERT INTO Estado (Nombre) VALUES ('Aprobado');
+INSERT INTO Estado (Nombre) VALUES ('Rechazado');
+GO
+
+INSERT INTO Documento (Tipo_Documento, Detalle) VALUES ('Cédula', 'Documento de identidad');
+INSERT INTO Documento (Tipo_Documento, Detalle) VALUES ('Pasaporte', 'Documento internacional');
+INSERT INTO Documento (Tipo_Documento, Detalle) VALUES ('Licencia', 'Licencia de conducir');
+INSERT INTO Documento (Tipo_Documento, Detalle) VALUES ('RUC', 'Registro Único de Contribuyentes');
+INSERT INTO Documento (Tipo_Documento, Detalle) VALUES ('Tarjeta de Identidad', 'Documento para menores de edad');
+GO
+
+INSERT INTO Propietario (Nombre, Cedula, Telefono, CorreoElectronico, Direccion) 
+VALUES ('Juan Pérez', '0102030405', '0998765432', 'juan.perez@example.com', 'Calle 1, Ciudad');
+
+INSERT INTO Propietario (Nombre, Cedula, Telefono, CorreoElectronico, Direccion) 
+VALUES ('María Gómez', '0506070809', '0987654321', 'maria.gomez@example.com', 'Avenida 2, Ciudad');
+
+INSERT INTO Propietario (Nombre, Cedula, Telefono, CorreoElectronico, Direccion) 
+VALUES ('Carlos Ruiz', '1112131415', '0976543210', 'carlos.ruiz@example.com', 'Boulevard 3, Ciudad');
+
+INSERT INTO Propietario (Nombre, Cedula, Telefono, CorreoElectronico, Direccion) 
+VALUES ('Ana López', '1617181920', '0965432109', 'ana.lopez@example.com', 'Calle 4, Ciudad');
+
+INSERT INTO Propietario (Nombre, Cedula, Telefono, CorreoElectronico, Direccion) 
+VALUES ('Luis Torres', '2122232425', '0954321098', 'luis.torres@example.com', 'Avenida 5, Ciudad');
+GO
+
+INSERT INTO Especialidades (Nombre) VALUES ('Cardiología');
+INSERT INTO Especialidades (Nombre) VALUES ('Dermatología');
+INSERT INTO Especialidades (Nombre) VALUES ('Neurología');
+INSERT INTO Especialidades (Nombre) VALUES ('Pediatría');
+INSERT INTO Especialidades (Nombre) VALUES ('Ginecología');
+GO
+
+INSERT INTO TipoSolicitud (Tipo) VALUES ('Renovación');
+INSERT INTO TipoSolicitud (Tipo) VALUES ('Nueva Apertura');
+INSERT INTO TipoSolicitud (Tipo) VALUES ('Suspensión');
+INSERT INTO TipoSolicitud (Tipo) VALUES ('Actualización de Datos');
+INSERT INTO TipoSolicitud (Tipo) VALUES ('Cancelación');
+GO
+
+INSERT INTO DirectorMedico (Nombre, Cedula, Execuatur, Telefono, CorreoElectronico, Direccion, ID_Estado)
+VALUES ('Dr. Roberto Martínez', '1234567890', 'EX123', '0912345678', 'roberto.m@example.com', 'Calle Director 1, Ciudad', 1);
+
+INSERT INTO DirectorMedico (Nombre, Cedula, Execuatur, Telefono, CorreoElectronico, Direccion, ID_Estado)
+VALUES ('Dra. Elena García', '0987654321', 'EX456', '0923456789', 'elena.garcia@example.com', 'Calle Director 2, Ciudad', 2);
+
+INSERT INTO DirectorMedico (Nombre, Cedula, Execuatur, Telefono, CorreoElectronico, Direccion, ID_Estado)
+VALUES ('Dr. Miguel Sánchez', '1122334455', 'EX789', '0934567890', 'miguel.sanchez@example.com', 'Calle Director 3, Ciudad', 3);
+
+INSERT INTO DirectorMedico (Nombre, Cedula, Execuatur, Telefono, CorreoElectronico, Direccion, ID_Estado)
+VALUES ('Dra. Laura Fernández', '5566778899', 'EX321', '0945678901', 'laura.fernandez@example.com', 'Calle Director 4, Ciudad', 4);
+
+INSERT INTO DirectorMedico (Nombre, Cedula, Execuatur, Telefono, CorreoElectronico, Direccion, ID_Estado)
+VALUES ('Dr. José Ramírez', '6677889900', 'EX654', '0956789012', 'jose.ramirez@example.com', 'Calle Director 5, Ciudad', 5);
+GO
+
+INSERT INTO Farmacia (Nombre, Direccion, Telefono, Tipo, ID_DirectorMedico)
+VALUES ('Farmacia Central', 'Av. Principal 100, Ciudad', '0911122233', 'Comercial', 1);
+
+INSERT INTO Farmacia (Nombre, Direccion, Telefono, Tipo, ID_DirectorMedico)
+VALUES ('Farmacia del Norte', 'Calle Norte 200, Ciudad', '0922233344', 'Comunitaria', 2);
+
+INSERT INTO Farmacia (Nombre, Direccion, Telefono, Tipo, ID_DirectorMedico)
+VALUES ('Farmacia del Sur', 'Avenida Sur 300, Ciudad', '0933344455', 'Especializada', 3);
+
+INSERT INTO Farmacia (Nombre, Direccion, Telefono, Tipo, ID_DirectorMedico)
+VALUES ('Farmacia del Este', 'Calle Este 400, Ciudad', '0944455566', 'Comercial', 4);
+
+INSERT INTO Farmacia (Nombre, Direccion, Telefono, Tipo, ID_DirectorMedico)
+VALUES ('Farmacia del Oeste', 'Av. Oeste 500, Ciudad', '0955566677', 'Comunitaria', 5);
+GO
+
+INSERT INTO Propietario_Farmacia (ID_Propietario, ID_Farmacia, ID_Estado)
+VALUES (1, 1, 1);
+
+INSERT INTO Propietario_Farmacia (ID_Propietario, ID_Farmacia, ID_Estado)
+VALUES (2, 2, 2);
+
+INSERT INTO Propietario_Farmacia (ID_Propietario, ID_Farmacia, ID_Estado)
+VALUES (3, 3, 3);
+
+INSERT INTO Propietario_Farmacia (ID_Propietario, ID_Farmacia, ID_Estado)
+VALUES (4, 4, 4);
+
+INSERT INTO Propietario_Farmacia (ID_Propietario, ID_Farmacia, ID_Estado)
+VALUES (5, 5, 5);
+GO
+
+INSERT INTO Especialidad_Medico (ID_DirectorMedico, ID_Especialidad) VALUES (1, 1);
+INSERT INTO Especialidad_Medico (ID_DirectorMedico, ID_Especialidad) VALUES (2, 2);
+INSERT INTO Especialidad_Medico (ID_DirectorMedico, ID_Especialidad) VALUES (3, 3);
+INSERT INTO Especialidad_Medico (ID_DirectorMedico, ID_Especialidad) VALUES (4, 4);
+INSERT INTO Especialidad_Medico (ID_DirectorMedico, ID_Especialidad) VALUES (5, 5);
+GO
+
+INSERT INTO Regulador (Nombre, Cedula, Cargo, Institucion, ID_Estado)
+VALUES ('Regulador Juan', '1010101010', 'Inspector', 'Institución A', 1);
+
+INSERT INTO Regulador (Nombre, Cedula, Cargo, Institucion, ID_Estado)
+VALUES ('Regulador Ana', '2020202020', 'Supervisor', 'Institución B', 2);
+
+INSERT INTO Regulador (Nombre, Cedula, Cargo, Institucion, ID_Estado)
+VALUES ('Regulador Pedro', '3030303030', 'Auditor', 'Institución C', 3);
+
+INSERT INTO Regulador (Nombre, Cedula, Cargo, Institucion, ID_Estado)
+VALUES ('Regulador Marta', '4040404040', 'Analista', 'Institución D', 4);
+
+INSERT INTO Regulador (Nombre, Cedula, Cargo, Institucion, ID_Estado)
+VALUES ('Regulador Luis', '5050505050', 'Coordinador', 'Institución E', 5);
+GO
+
+INSERT INTO Certificaciones (Tipo) VALUES ('Certificación A');
+INSERT INTO Certificaciones (Tipo) VALUES ('Certificación B');
+INSERT INTO Certificaciones (Tipo) VALUES ('Certificación C');
+INSERT INTO Certificaciones (Tipo) VALUES ('Certificación D');
+INSERT INTO Certificaciones (Tipo) VALUES ('Certificación E');
+GO
+
+
+INSERT INTO Solicitud (ID_Farmacia, ID_Cer, Documentos, Estado, ID_Tipo_Solicitud)
+VALUES (1, 1, 'Documento1, Documento2', 0, 1);
+
+INSERT INTO Solicitud (ID_Farmacia, ID_Cer, Documentos, Estado, ID_Tipo_Solicitud)
+VALUES (2, 2, 'Documento3, Documento4', 1, 2);
+
+INSERT INTO Solicitud (ID_Farmacia, ID_Cer, Documentos, Estado, ID_Tipo_Solicitud)
+VALUES (3, 3, 'Documento5, Documento6', 0, 3);
+
+INSERT INTO Solicitud (ID_Farmacia, ID_Cer, Documentos, Estado, ID_Tipo_Solicitud)
+VALUES (4, 4, 'Documento7, Documento8', 1, 4);
+
+INSERT INTO Solicitud (ID_Farmacia, ID_Cer, Documentos, Estado, ID_Tipo_Solicitud)
+VALUES (5, 5, 'Documento9, Documento10', 0, 5);
+GO
+
+
+INSERT INTO Solicitud_Documento (ID_Solicitud, ID_Documento)
+VALUES (1, 1);
+
+INSERT INTO Solicitud_Documento (ID_Solicitud, ID_Documento)
+VALUES (2, 2);
+
+INSERT INTO Solicitud_Documento (ID_Solicitud, ID_Documento)
+VALUES (3, 3);
+
+INSERT INTO Solicitud_Documento (ID_Solicitud, ID_Documento)
+VALUES (4, 4);
+
+INSERT INTO Solicitud_Documento (ID_Solicitud, ID_Documento)
+VALUES (5, 5);
+GO
+
+
+INSERT INTO Inspeccion (ID_Regulador, ID_Farmacia, Fecha, Resultado, Observaciones, Informe)
+VALUES (1, 1, '2025-03-01', 'Aprobado', 'Todo correcto', 'Informe1');
+
+INSERT INTO Inspeccion (ID_Regulador, ID_Farmacia, Fecha, Resultado, Observaciones, Informe)
+VALUES (2, 2, '2025-03-02', 'Pendiente', 'Falta documentación', 'Informe2');
+
+INSERT INTO Inspeccion (ID_Regulador, ID_Farmacia, Fecha, Resultado, Observaciones, Informe)
+VALUES (3, 3, '2025-03-03', 'Rechazado', 'No cumple requisitos', 'Informe3');
+
+INSERT INTO Inspeccion (ID_Regulador, ID_Farmacia, Fecha, Resultado, Observaciones, Informe)
+VALUES (4, 4, '2025-03-04', 'Aprobado', 'Excelente', 'Informe4');
+
+INSERT INTO Inspeccion (ID_Regulador, ID_Farmacia, Fecha, Resultado, Observaciones, Informe)
+VALUES (5, 5, '2025-03-05', 'Pendiente', 'En revisión', 'Informe5');
+GO
+
+
+INSERT INTO Licencia (ID_Cer, ID_Farmacia, Fecha_Atribucion, Fecha_Vencimiento, Estado)
+VALUES (1, 1, '2025-01-01', '2026-01-01', 1);
+
+INSERT INTO Licencia (ID_Cer, ID_Farmacia, Fecha_Atribucion, Fecha_Vencimiento, Estado)
+VALUES (2, 2, '2025-02-01', '2026-02-01', 1);
+
+INSERT INTO Licencia (ID_Cer, ID_Farmacia, Fecha_Atribucion, Fecha_Vencimiento, Estado)
+VALUES (3, 3, '2025-03-01', '2026-03-01', 1);
+
+INSERT INTO Licencia (ID_Cer, ID_Farmacia, Fecha_Atribucion, Fecha_Vencimiento, Estado)
+VALUES (4, 4, '2025-04-01', '2026-04-01', 1);
+
+INSERT INTO Licencia (ID_Cer, ID_Farmacia, Fecha_Atribucion, Fecha_Vencimiento, Estado)
+VALUES (5, 5, '2025-05-01', '2026-05-01', 1);
+GO
+
+use SistemaFarmacias;
+
+CREATE TABLE Usuarios (
+    ID INT IDENTITY(1,1) PRIMARY KEY,  -- Identificador único autoincremental
+    Username NVARCHAR(50) UNIQUE NOT NULL, -- Nombre de usuario único
+    PasswordHash NVARCHAR(255) NOT NULL, -- Contraseña hasheada
+    Email NVARCHAR(100) UNIQUE NOT NULL, -- Correo electrónico único
+    FechaCreacion DATETIME DEFAULT GETDATE(), -- Fecha de registro
+    Estado BIT DEFAULT 1, -- Estado activo (1 = Activo, 0 = Inactivo)
+    NivelUsuario TINYINT DEFAULT 0 -- 0 = Usuario normal, 1 = Administrador
+);
+
+
+
+	ALTER TABLE Usuarios ADD Salt NVARCHAR(50) NOT NULL DEFAULT NEWID();
+
+	DROP TABLE Usuarios;
+
+	-- Declarar la contraseña en texto plano y generar un salt
+DECLARE @Password NVARCHAR(255) = N'MiContraseñaSegura123';
+DECLARE @Salt NVARCHAR(50) = NEWID();
+
+-- Concatenar la contraseña y el salt para generar el hash
+DECLARE @Combined NVARCHAR(MAX) = @Password + @Salt;
+
+-- Calcular el hash usando HASHBYTES; convertimos primero la combinación a VARBINARY(MAX)
+DECLARE @Hash VARBINARY(64) = HASHBYTES('SHA2_256', CAST(@Combined AS VARBINARY(MAX)));
+
+-- Convertir el hash a una cadena hexadecimal (incluye el prefijo '0x')
+DECLARE @HashHex NVARCHAR(255) = CONVERT(NVARCHAR(255), @Hash, 1);
+
+-- Combinar el salt y el hash en un solo campo, separados por '$'
+DECLARE @StoredValue NVARCHAR(255) = @Salt + '$' + @HashHex;
+
+-- Insertar el usuario (PasswordHash almacenará la cadena con salt y hash)
+INSERT INTO Usuarios (Username, PasswordHash, Email, Estado)
+VALUES (
+    N'usuario123',
+    @StoredValue,
+    N'usuario123@example.com',
+    1  -- Activo
+);
+
+-- Supongamos que el usuario ingresa su contraseña para autenticarse
+DECLARE @Ingresada NVARCHAR(255) = N'MiContraseñaSegura123';
+DECLARE @Username NVARCHAR(50) = N'usuario123';
+
+-- Variables para almacenar el valor guardado
+DECLARE @StoredValue NVARCHAR(255);
+DECLARE @SaltStored NVARCHAR(50);
+DECLARE @HashStored NVARCHAR(255);
+
+-- Recuperar el valor almacenado (salt y hash concatenados) para ese usuario
+SELECT TOP 1 @StoredValue = PasswordHash
+FROM Usuarios
+WHERE Username = @Username;
+
+-- Suponiendo que el formato es "salt$hashHex",
+-- extraer el salt y el hash usando funciones de cadena:
+DECLARE @DelimiterPos INT = CHARINDEX('$', @StoredValue);
+SET @SaltStored = SUBSTRING(@StoredValue, 1, @DelimiterPos - 1);
+SET @HashStored = SUBSTRING(@StoredValue, @DelimiterPos + 1, LEN(@StoredValue));
+
+-- Generar el hash de la contraseña ingresada concatenada con el salt almacenado
+DECLARE @CombinedIngresada NVARCHAR(MAX) = @Ingresada + @SaltStored;
+DECLARE @HashIngresado VARBINARY(64) = HASHBYTES('SHA2_256', CAST(@CombinedIngresada AS VARBINARY(MAX)));
+DECLARE @HashIngresadoHex NVARCHAR(255) = CONVERT(NVARCHAR(255), @HashIngresado, 1);
+
+-- Comparar el hash generado con el hash almacenado
+IF @HashIngresadoHex = @HashStored
+    PRINT N'✅ Contraseña correcta';
+ELSE
+    PRINT N'❌ Contraseña incorrecta';
+
+	select * from Usuarios;
